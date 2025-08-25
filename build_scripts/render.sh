@@ -12,3 +12,6 @@ python wizard.py
 
 # mkdir -p staticfiles
 python manage.py collectstatic
+
+# Build command
+# gunicorn backend.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
