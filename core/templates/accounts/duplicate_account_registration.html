@@ -1,0 +1,25 @@
+{% extends 'base_layout.html' %}
+{% block content %}
+{% load i18n %}
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px; background: linear-gradient(to right, #ffffff, #ffffff); background-clip: text; 
+color: transparent;">
+    ¡Hola              <span style="color: #8e9eb5; text-decoration: none; display: inline-block;">
+                <a href="" style="text-decoration:none !important; color: #8e9eb5 !important">{{ username }}</a>
+            </span>!
+</p>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px; background: linear-gradient(to right, #ffffff, #ffffff); background-clip: text; 
+color: transparent;">
+    Se intentó registrar una cuenta con tu correo electrónico.
+</p>
+<ul style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px; padding-left: 20px; background: linear-gradient(to right, #ffffff, #ffffff); background-clip: text; 
+color: transparent;">
+    <!-- <li> <strong>IP:</strong> {{ ip_address }} </li>
+    <li> <strong>Navegador:</strong> {{ browser }} </li>
+    <li> <strong>Sistema operativo:</strong> {{ os }} </li> -->
+    <li> <strong>Fecha y hora (UTC):</strong> {{ time }} </li>
+</ul>
+<p style="font-family: sans-serif; font-size: 14px; font-weight: normal; margin: 0; Margin-bottom: 15px; background: linear-gradient(to right, #ffffff, #ffffff); background-clip: text; 
+color: transparent;">
+    En caso de que no hayas sido tú, por favor, restablece tu contraseña. Caso contrario, ignora este mensaje.
+</p>
+{% endblock %}
