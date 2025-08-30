@@ -64,5 +64,4 @@ coverage.xml
 .DS_Store
 
 # Extra files
-*.txt
-!requirements.txt
+save_to_self_and_delete_*.txt

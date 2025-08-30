@@ -1,0 +1,264 @@
+<!doctype html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Daddy Django - Django Template</title>
+    <meta name="description" content="Daddy Django is a comprehensive Django template designed for building scalable and secure backend applications.">
+    <style>
+        /* ===== BASE RESET ===== */
+        * { box-sizing: border-box; }
+        body {
+            background: #0f0f0f !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            font-size: 16px;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            color: #ffffff;
+        }
+        table { border-collapse: separate; width: 100%; }
+        td { font-family: inherit; vertical-align: top; }
+        img { border: 0; outline: none; text-decoration: none; }
+        a { color: #007aff; text-decoration: none; transition: color 0.2s ease; }
+        a:hover { color: #0056b3; }
+
+        /* ===== LAYOUT ===== */
+        .main-container {
+            background: linear-gradient(to right, #0f0f0f, #0f0f0f) !important;
+            padding: 40px 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Card window effect */
+        .card-wrapper {
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+            background: linear-gradient(to right, #333333, #333333) !important;
+            background-color: #333333 !important;
+            border-radius: 13px;
+            padding: 1px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        
+        .card {
+            width: 100%;
+            margin: 0 auto;
+            background: linear-gradient(to right, #1a1a1a, #1a1a1a) !important;
+            background-color: #1a1a1a !important;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            background: linear-gradient(to right, #1a1a1a, #1a1a1a) !important;
+            padding: 60px 40px 40px;
+            text-align: center;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .logo-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo {
+            height: 60px;
+            margin-right: 15px;
+        }
+        
+        .header-title {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        /* Header Divider */
+        .header-divider {
+            height: 1px;
+            background: linear-gradient(to right, #333333, #333333) !important;
+            background-color: #333333 !important;
+            margin: 0;
+        }
+
+        /* ===== CONTENT AREA ===== */
+        .content {
+            padding: 50px 40px;
+            background: linear-gradient(to right, #1a1a1a, #1a1a1a) !important;
+            color: #ffffff;
+            line-height: 1.7;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            min-height: 350px;
+            text-align: center;
+        }
+
+        .page-title {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .tagline {
+            font-size: 20px;
+            margin-bottom: 30px;
+            color: #a0a0a0;
+            font-weight: 300;
+        }
+
+        /* Description */
+        .description {
+            margin: 30px 0;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.8;
+            color: #ffffff;
+        }
+        
+        /* Message */
+        .message {
+            margin: 40px 0 30px;
+            font-size: 18px;
+            color: #a0a0a0;
+        }
+        
+        /* CTA Button */
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 30px;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(26, 82, 194, 0.3);
+            color: white;
+        }
+        
+        .redirect-notice {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #a0a0a0;
+        }
+        
+        /* Accent bar */
+        .accent-bar {
+            height: 2px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+        }
+        
+        /* ===== FOOTER ===== */
+        .footer {
+            background: #1a1a1a !important;
+            background-color: #1a1a1a !important;
+            background-image: none !important;
+            padding: 25px 40px;
+            text-align: center;
+            color: #a0a0a0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            font-size: 14px;
+            border-top: 1px solid #333333;
+        }
+
+        .card .footer {
+            background: #1a1a1a !important;
+            background-color: #1a1a1a !important;
+        }
+
+        .social-links {
+            margin-top: 20px;
+        }
+        
+        .social-link {
+            display: inline-block;
+            margin: 0 10px;
+            color: #007aff;
+        }
+        
+        .social-link:hover {
+            color: #764ba2;
+        }
+    </style>
+    <script>
+        window.onload = function() {
+            // Check if redirect should happen automatically
+            const urlParams = new URLSearchParams(window.location.search);
+            if(urlParams.get('autoRedirect') === 'true') {
+                setTimeout(function() {
+                    window.location.href = 'https://github.com/'; 
+                }, 3000);
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="main-container">
+        <div class="card-wrapper">
+            <div class="card">
+                <!-- Header -->
+                <div class="header">
+                    <div class="logo-wrapper">
+                        <img src="/static/images/chadicon.svg" alt="Daddy Django Logo" class="logo">
+                        <h1 class="header-title">Daddy Django</h1>
+                    </div>
+                </div>
+                
+                <!-- Accent Bar -->
+                <div class="accent-bar"></div>
+
+                <!-- MAIN CONTENT -->
+                <div class="content">
+                    <h2 class="page-title">Welcome to Daddy Django</h2>
+                    <p class="tagline">Comprehensive Django Template</p>
+                    
+                    <div class="description">
+                        <p>Daddy Django is a robust Django project template that provides a solid foundation for building production-ready backend applications. It includes comprehensive authentication, modular settings, REST API setup, and follows Django best practices.</p>
+                    </div>
+                    
+                    <div class="message">
+                        <p>Get started by reading the documentation and exploring the template features:</p>
+                    </div>
+                    
+                    {% load env_tags %}
+                    <a href="https://github.com/" class="cta-button">View Documentation</a>
+                    
+                    <p class="redirect-notice">Check the README.md file for setup instructions and features</p>
+                </div>
+                
+                <!-- FOOTER -->
+                <div class="footer">
+                    <p>© {% now "Y" %} Daddy Django Template.</p>
+                    
+                    <div class="social-links">
+                        <a href="https://github.com/" class="social-link" target="_blank">GitHub</a>
+                        <a href="#" class="social-link">Documentation</a>
+                        <a href="#" class="social-link" target="_blank">Examples</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
