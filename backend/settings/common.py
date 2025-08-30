@@ -13,7 +13,6 @@ Quick-start development settings - unsuitable for production
 See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 """
 
-import os
 from .env import env, BASE_DIR
 
 PROJECT_NAME = env('PROJECT_NAME', default='Test')
@@ -24,13 +23,13 @@ SECRET_KEY = env('DJANGO_SECRET_KEY')
 
 DEBUG = env('DEBUG', default=False)
 
-IS_TEST = env('IS_TEST', default=False) # Unused currently
+IS_TEST = env('IS_TEST', default=False) # Use for simulating prod in local environment
 
 DISABLE_REGISTRATION = env('DISABLE_REGISTRATION', default=False)
 
 ALLOWED_HOSTS = [env('DOMAIN', default='localhost')]
 
-if DEBUG:
+if DEBUG or IS_TEST:
     ALLOWED_HOSTS += ['localhost', '127.0.0.1']
 
 ENABLE_OTP_ADMIN = True
@@ -87,6 +86,7 @@ INSTALLED_APPS = [
 # TODO ADD
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware', # NOTE this is for serving static files. If nginx is implemented for production, this is not needed
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.locale.LocaleMiddleware', # New
     # 'core.middleware.force_default_language_middleware', # New
@@ -167,11 +167,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Static files configuration
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
+    BASE_DIR / "static",
 ]
 
 # Optional: Configure OTP settings
-OTP_TOTP_ISSUER = 'Test'
-OTP_LOGIN_URL = '/admin/login/'
+# OTP_TOTP_ISSUER = 'Test'
+# OTP_LOGIN_URL = '/admin/login/'

@@ -2,6 +2,7 @@ from .env import *
 
 # Generic config
 from .common import *
+from .cors import *
 from .i18n_l10n import *
 from .warnings import *
 from .logging import *
@@ -15,3 +16,5 @@ from .databases import *
 from .celery import *
 from .redis import *
 from .email import *
+from .gcs import *
+
