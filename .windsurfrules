@@ -72,4 +72,176 @@
   - Separate serializers into logical groups by domain function.
   - Implement specific adapters for extending third-party functionality.
   - Follow Django's app-based modularity pattern for clean separation of concerns.
-  
+
+## File Upload Handling
+
+**Core Principle**: Never store files directly in Django models. Always upload files to Google Cloud Storage and store only the file URL in the database.
+
+### File Upload Pattern
+- Models should use `URLField` for file references, never `FileField` or `ImageField`
+- Views must handle file uploads by uploading to GCS first, then saving the returned URL
+- Use the GCS utility functions provided in `core/utils/gcs.py` for all file operations
+
+### Implementation Guidelines
+
+**Model Design:**
+```python
+# ✅ Correct - Use URLField for file references
+class Project(BaseModel):
+    name = models.CharField(max_length=200)
+    logo_url = models.URLField(blank=True, null=True)
+    document_url = models.URLField(blank=True, null=True)
+
+# ❌ Incorrect - Never use FileField or ImageField
+class Project(BaseModel):
+    name = models.CharField(max_length=200)
+    logo = models.ImageField(upload_to='logos/')  # DON'T DO THIS
+```
+
+**View Implementation:**
+```python
+from core.utils.gcs import upload_project_file, upload_member_photo
+
+def create_project(request):
+    if request.method == 'POST':
+        # Handle file uploads first
+        logo_url = None
+        if 'logo' in request.FILES:
+            logo_url = upload_project_file(
+                request.FILES['logo'], 
+                file_type='logo',
+                project_id=project.id if project else None
+            )
+        
+        # Create model with URL
+        project = Project.objects.create(
+            name=request.POST['name'],
+            logo_url=logo_url
+        )
+```
+
+**Form Handling:**
+- Forms should include file input fields for uploads
+- Process file uploads in the view before model creation/update
+- Handle file upload errors gracefully with proper error messages
+- Validate file types and sizes using the GCS utility's built-in validation
+
+**Available GCS Functions:**
+- `upload_project_file(file, file_type, project_id=None)` - General project file uploads
+- `upload_member_photo(file, project_id=None, member_name=None)` - Member photos with validation
+- `gcs_uploader.delete_file(file_url)` - Delete files when models are deleted
+
+**Error Handling:**
+- Wrap GCS upload calls in try-except blocks
+- Provide meaningful error messages for upload failures
+- Consider rollback strategies if model creation fails after successful file upload
+- Log all file upload operations for debugging and audit purposes
+
+**Security Considerations:**
+- File type validation is handled by GCS utility functions
+- File size limits are enforced (5MB for member photos)
+- All uploaded files are made publicly readable but use UUID-based filenames for security
+- Never trust client-provided filenames; always generate secure filenames
+
+## URL Documentation Standards
+
+**Core Principle**: Every Django app must maintain a comprehensive README that documents all its URL patterns and endpoints.
+
+### Documentation Requirements
+
+**App README Structure:**
+- Each app must have a `README.md` file in its root directory
+- The README must include a "URLs & Endpoints" section that lists all URL patterns
+- Document both web views and API endpoints if the app has both
+- Update the README whenever new URLs are added or existing ones are modified
+
+### URL Documentation Format
+
+**Required Information for Each URL:**
+- URL pattern
+- HTTP methods supported
+- Brief description of functionality
+- Required parameters (if any)
+- Authentication requirements
+- Expected request/response format (for APIs)
+
+**Example App README Structure:**
+```markdown
+# App Name
+
+Brief description of what this app does.
+
+## URLs & Endpoints
+
+### Web Views
+| URL Pattern | Method | Description | Auth Required |
+|-------------|--------|-------------|---------------|
+| `/projects/` | GET | List all projects | Yes |
+| `/projects/create/` | GET, POST | Create new project | Yes |
+| `/projects/<int:id>/` | GET | Project detail view | Yes |
+| `/projects/<int:id>/edit/` | GET, POST | Edit project | Yes (owner only) |
+| `/projects/<int:id>/delete/` | POST | Delete project | Yes (owner only) |
+
+### API Endpoints
+| URL Pattern | Method | Description | Request Body | Response |
+|-------------|--------|-------------|--------------|----------|
+| `/api/projects/` | GET | List projects | - | JSON array |
+| `/api/projects/` | POST | Create project | JSON object | Created project |
+| `/api/projects/<int:id>/` | GET | Get project | - | JSON object |
+| `/api/projects/<int:id>/` | PUT | Update project | JSON object | Updated project |
+| `/api/projects/<int:id>/` | DELETE | Delete project | - | 204 status |
+
+### URL Parameters
+- `<int:id>`: Project ID (integer)
+- `<slug:slug>`: Project slug (string)
+
+### Authentication Notes
+- All endpoints require authentication unless specified
+- Owner-only endpoints check if user is the project creator
+- API endpoints use token authentication
+```
+
+### Implementation Workflow
+
+**When Adding New URLs:**
+1. Implement the view/endpoint in your app
+2. Add URL pattern to the app's `urls.py`
+3. Immediately update the app's README.md with the new URL documentation
+4. Include any new parameters, authentication requirements, or special notes
+
+**When Modifying Existing URLs:**
+1. Update the view/endpoint implementation
+2. Modify the URL pattern if needed
+3. Update the corresponding documentation in the app's README
+4. Mark any breaking changes clearly in the documentation
+
+### Documentation Best Practices
+
+**URL Pattern Documentation:**
+- Use the exact pattern from `urls.py` (including parameter names)
+- Group related URLs together (CRUD operations for the same model)
+- Sort URLs logically (list → create → detail → update → delete)
+- Include both the URL pattern and a human-readable description
+
+**Parameter Documentation:**
+- Document all URL parameters with their types and descriptions
+- Explain any constraints or validation rules
+- Provide examples for complex parameters
+
+**Authentication Documentation:**
+- Clearly state authentication requirements for each endpoint
+- Explain permission levels (e.g., "owner only", "admin required")
+- Document any special access rules or exceptions
+
+**API-Specific Documentation:**
+- Include expected request body format and required fields
+- Document response format and status codes
+- Provide examples for complex request/response structures
+- Note any pagination, filtering, or sorting options
+
+### Quality Standards
+- Keep documentation current - outdated URL docs are worse than no docs
+- Use consistent formatting across all app READMEs
+- Review and update documentation during code reviews
+- Test documented URLs to ensure accuracy
+- Include examples for complex or non-obvious URL patterns
