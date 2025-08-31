@@ -1,6 +1,6 @@
 import os
 import uuid
-from typing import Optional
+from typing import Optional, List
 from django.conf import settings
 from google.cloud import storage
 from google.oauth2 import service_account
@@ -118,30 +118,46 @@ class GCSUploader:
 gcs_uploader = GCSUploader()
 
 
-def upload_project_file(file, file_type: str, project_id: Optional[str] = None) -> str:
+def upload_file(file, folder: str = "uploads", filename: Optional[str] = None, 
+                allowed_types: Optional[List[str]] = None, max_size_mb: Optional[int] = None) -> str:
     """
-    Upload a project-related file to GCS
+    Generic file upload function with optional validation
     
     Args:
         file: Django UploadedFile object
-        file_type: Type of file (logo, document, etc.)
-        project_id: Optional project ID for organizing files
+        folder: Folder path in the bucket (default: "uploads")
+        filename: Custom filename (optional, will generate UUID if not provided)
+        allowed_types: List of allowed MIME types (optional)
+        max_size_mb: Maximum file size in MB (optional)
         
     Returns:
         str: Public URL of the uploaded file
+        
+    Raises:
+        Exception: If file validation fails or upload fails
     """
-    folder = f"projects/{project_id or 'temp'}/{file_type}" if project_id else f"projects/temp/{file_type}"
-    return gcs_uploader.upload_file(file, folder=folder)
+    # Validate file type if specified
+    if allowed_types and file.content_type not in allowed_types:
+        raise Exception(f"Invalid file type. Allowed types: {', '.join(allowed_types)}")
+    
+    # Validate file size if specified
+    if max_size_mb:
+        max_size = max_size_mb * 1024 * 1024  # Convert MB to bytes
+        if file.size > max_size:
+            raise Exception(f"File too large. Maximum size: {max_size_mb}MB, got: {file.size / (1024*1024):.1f}MB")
+    
+    return gcs_uploader.upload_file(file, folder=folder, filename=filename)
 
 
-def upload_member_photo(file, project_id: Optional[str] = None, member_name: Optional[str] = None) -> str:
+def upload_image(file, folder: str = "images", filename: Optional[str] = None, max_size_mb: int = 5) -> str:
     """
-    Upload a project member photo to GCS with validation
+    Upload an image file with validation
     
     Args:
         file: Django UploadedFile object
-        project_id: Optional project ID for organizing files
-        member_name: Optional member name for file organization
+        folder: Folder path in the bucket (default: "images")
+        filename: Custom filename (optional, will generate UUID if not provided)
+        max_size_mb: Maximum file size in MB (default: 5MB)
         
     Returns:
         str: Public URL of the uploaded file
@@ -149,27 +165,73 @@ def upload_member_photo(file, project_id: Optional[str] = None, member_name: Opt
     Raises:
         Exception: If file validation fails
     """
-    # Validate file type
-    allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
-    if file.content_type not in allowed_types:
-        raise Exception(f"Invalid file type. Allowed types: {', '.join(allowed_types)}")
+    allowed_image_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+    return upload_file(file, folder=folder, filename=filename, 
+                      allowed_types=allowed_image_types, max_size_mb=max_size_mb)
+
+
+def upload_document(file, folder: str = "documents", filename: Optional[str] = None, max_size_mb: int = 10) -> str:
+    """
+    Upload a document file with validation
     
-    # Validate file size (max 5MB)
-    max_size = 5 * 1024 * 1024  # 5MB in bytes
-    if file.size > max_size:
-        raise Exception(f"File too large. Maximum size: 5MB, got: {file.size / (1024*1024):.1f}MB")
+    Args:
+        file: Django UploadedFile object
+        folder: Folder path in the bucket (default: "documents")
+        filename: Custom filename (optional, will generate UUID if not provided)
+        max_size_mb: Maximum file size in MB (default: 10MB)
+        
+    Returns:
+        str: Public URL of the uploaded file
+        
+    Raises:
+        Exception: If file validation fails
+    """
+    allowed_document_types = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/plain',
+        'text/csv'
+    ]
+    return upload_file(file, folder=folder, filename=filename, 
+                      allowed_types=allowed_document_types, max_size_mb=max_size_mb)
+
+
+def delete_file_from_url(file_url: str) -> bool:
+    """
+    Delete a file from GCS using its URL
     
-    # Create folder structure
-    folder = f"projects/{project_id or 'temp'}/members"
+    Args:
+        file_url: Public URL of the file to delete
+        
+    Returns:
+        bool: True if deletion was successful, False otherwise
+    """
+    if not file_url:
+        return True
+    return gcs_uploader.delete_file(file_url)
+
+
+def generate_secure_filename(original_filename: str, prefix: Optional[str] = None) -> str:
+    """
+    Generate a secure filename with UUID
     
-    # Generate filename with member name if provided
-    if member_name:
-        # Sanitize member name for filename
-        safe_name = "".join(c for c in member_name if c.isalnum() or c in (' ', '-', '_')).rstrip()
-        safe_name = safe_name.replace(' ', '_').lower()
-        file_extension = os.path.splitext(file.name)[1]
-        filename = f"{safe_name}_{uuid.uuid4().hex[:8]}{file_extension}"
+    Args:
+        original_filename: Original filename from upload
+        prefix: Optional prefix for the filename
+        
+    Returns:
+        str: Secure filename with UUID
+    """
+    file_extension = os.path.splitext(original_filename)[1].lower()
+    uuid_part = uuid.uuid4().hex[:8]
+    
+    if prefix:
+        # Sanitize prefix for filename
+        safe_prefix = "".join(c for c in prefix if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        safe_prefix = safe_prefix.replace(' ', '_').lower()
+        return f"{safe_prefix}_{uuid_part}{file_extension}"
     else:
-        filename = None
-    
-    return gcs_uploader.upload_file(file, folder=folder, filename=filename)
+        return f"{uuid_part}{file_extension}"

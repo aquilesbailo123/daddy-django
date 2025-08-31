@@ -92,56 +92,149 @@ class Project(BaseModel):
     logo_url = models.URLField(blank=True, null=True)
     document_url = models.URLField(blank=True, null=True)
 
+class Profile(BaseModel):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    avatar_url = models.URLField(blank=True, null=True)
+    resume_url = models.URLField(blank=True, null=True)
+
 # ❌ Incorrect - Never use FileField or ImageField
 class Project(BaseModel):
     name = models.CharField(max_length=200)
     logo = models.ImageField(upload_to='logos/')  # DON'T DO THIS
+    document = models.FileField(upload_to='docs/')  # DON'T DO THIS
 ```
 
 **View Implementation:**
 ```python
-from core.utils.gcs import upload_project_file, upload_member_photo
+from core.utils.gcs import upload_image, upload_document, upload_file, delete_file_from_url
 
 def create_project(request):
     if request.method == 'POST':
-        # Handle file uploads first
-        logo_url = None
-        if 'logo' in request.FILES:
-            logo_url = upload_project_file(
-                request.FILES['logo'], 
-                file_type='logo',
-                project_id=project.id if project else None
+        try:
+            # Handle image uploads
+            logo_url = None
+            if 'logo' in request.FILES:
+                logo_url = upload_image(
+                    request.FILES['logo'], 
+                    folder='projects/logos'
+                )
+            
+            # Handle document uploads
+            document_url = None
+            if 'document' in request.FILES:
+                document_url = upload_document(
+                    request.FILES['document'],
+                    folder='projects/documents'
+                )
+            
+            # Create model with URLs
+            project = Project.objects.create(
+                name=request.POST['name'],
+                logo_url=logo_url,
+                document_url=document_url
             )
-        
-        # Create model with URL
-        project = Project.objects.create(
-            name=request.POST['name'],
-            logo_url=logo_url
-        )
+            
+        except Exception as e:
+            # Handle upload errors
+            messages.error(request, f"File upload failed: {str(e)}")
+            return render(request, 'projects/create.html')
+
+def update_project(request, pk):
+    project = get_object_or_404(Project, pk=pk)
+    
+    if request.method == 'POST':
+        try:
+            # Handle logo replacement
+            if 'logo' in request.FILES:
+                # Delete old logo if exists
+                if project.logo_url:
+                    delete_file_from_url(project.logo_url)
+                
+                # Upload new logo
+                project.logo_url = upload_image(
+                    request.FILES['logo'],
+                    folder='projects/logos'
+                )
+            
+            project.save()
+            
+        except Exception as e:
+            messages.error(request, f"File upload failed: {str(e)}")
+```
+
+**Available GCS Functions:**
+
+**Core Functions:**
+- `upload_file(file, folder, filename=None, allowed_types=None, max_size_mb=None)` - Generic file upload with optional validation
+- `upload_image(file, folder='images', filename=None, max_size_mb=5)` - Image upload with validation
+- `upload_document(file, folder='documents', filename=None, max_size_mb=10)` - Document upload with validation
+- `delete_file_from_url(file_url)` - Delete files using their GCS URLs
+- `generate_secure_filename(original_filename, prefix=None)` - Generate secure filenames
+
+**Usage Examples:**
+```python
+# Generic file upload with custom validation
+pdf_url = upload_file(
+    file=request.FILES['contract'],
+    folder='contracts',
+    allowed_types=['application/pdf'],
+    max_size_mb=20
+)
+
+# Image upload (automatically validates image types)
+avatar_url = upload_image(
+    file=request.FILES['avatar'],
+    folder='profiles/avatars',
+    max_size_mb=2
+)
+
+# Document upload (validates common document types)
+resume_url = upload_document(
+    file=request.FILES['resume'],
+    folder='profiles/resumes'
+)
+
+# Custom filename with prefix
+logo_url = upload_image(
+    file=request.FILES['logo'],
+    folder='companies/logos',
+    filename=generate_secure_filename(
+        request.FILES['logo'].name,
+        prefix=company.name
+    )
+)
+
+# Delete old files when updating
+if old_avatar_url:
+    delete_file_from_url(old_avatar_url)
 ```
 
 **Form Handling:**
 - Forms should include file input fields for uploads
 - Process file uploads in the view before model creation/update
 - Handle file upload errors gracefully with proper error messages
-- Validate file types and sizes using the GCS utility's built-in validation
-
-**Available GCS Functions:**
-- `upload_project_file(file, file_type, project_id=None)` - General project file uploads
-- `upload_member_photo(file, project_id=None, member_name=None)` - Member photos with validation
-- `gcs_uploader.delete_file(file_url)` - Delete files when models are deleted
+- Use appropriate upload functions based on file type (image, document, or generic)
+- Always validate file types and sizes using the built-in validation
 
 **Error Handling:**
 - Wrap GCS upload calls in try-except blocks
 - Provide meaningful error messages for upload failures
 - Consider rollback strategies if model creation fails after successful file upload
 - Log all file upload operations for debugging and audit purposes
+- Delete old files when replacing them to avoid storage bloat
 
 **Security Considerations:**
 - File type validation is handled by GCS utility functions
-- File size limits are enforced (5MB for member photos)
-- All uploaded files are made publicly readable but use UUID-based filenames for security
+- File size limits are enforced (customizable per upload function)
+- All uploaded files use UUID-based filenames for security
 - Never trust client-provided filenames; always generate secure filenames
+- Files are organized in logical folder structures within the GCS bucket
+
+**File Organization Best Practices:**
+- Use logical folder structures: `app_name/file_type/` (e.g., `profiles/avatars/`, `projects/documents/`)
+- Group related files together in folders
+- Use descriptive folder names that reflect the content type
+- Consider including model IDs or user IDs in folder paths for better organization
 
 ## URL Documentation Standards
 
