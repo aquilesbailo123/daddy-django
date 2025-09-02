@@ -1,3 +1,4 @@
+from .env import env
 
 # CORS Configuration
 # NOTE adjust this for production
