@@ -51,7 +51,7 @@ class UserSerializer(UserDetailsSerializer):
     actions_freezed_till = serializers.DateTimeField(source='profile.actions_freezed_till', read_only=True)
 
     class Meta(UserDetailsSerializer.Meta):
-        fields = ('username', 'email', 'first_name', 'last_name', 'actions_freezed_till')
+        fields = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'actions_freezed_till')
         extra_kwargs = {'pk': {'read_only': False, 'required': False}}
 
     def create(self, *args, **kwargs):
